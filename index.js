@@ -95,11 +95,12 @@ export default function effex({ actions, context, disableSideEffects }) {
       return store.replaceReducer(toEffectsReducer(reducer));
     }
 
-    return {
-      ...store,
+    const storeWithEffects = Object.assign({ }, store, {
       dispatch,
       replaceReducer,
       process: createSideEffectProcessor(dispatch)
-    };
+    });
+
+    return storeWithEffects;
   };
 }
