@@ -22,85 +22,100 @@
  */
 
 function toActionCreator(target, type) {
-  target[type] = payload => ({
-    type,
-    payload,
-    meta: {
-      at: Date.now()
-    }
-  });
+  target[type] = function (payload) {
+    return {
+      type: type,
+      payload: payload,
+      meta: {
+        at: Date.now()
+      }
+    };
+  };
 
   return target;
 }
 
-export default function effex({ actions, context, disableSideEffects }) {
-  let sideEffects = [];
-  const actionCreators = Object.keys(actions).reduce(toActionCreator, {});
+module.exports = function effex(options) {
+  var actions = options.actions;
+  var context = options.context;
+  var disableSideEffects = options.disableSideEffects;
+  var sideEffects = [];
+  var actionCreators = Object.keys(actions).reduce(toActionCreator, {});
 
-  const toEffectsReducer = reducer => (state, action) => {
-    const next = reducer(state, action);
-    const reduce = actions[action.type] || actions._;
+  function toEffectsReducer(reducer) {
+    return function (state, action) {
+      var next = reducer(state, action);
+      var reduce = actions[action.type] || actions._;
 
-    if (typeof reduce !== "function") {
-      return next;
-    }
-
-    const array = reduce(next, action);
-
-    if (!Array.isArray(array)) {
-      const json = JSON.stringify(array, null, 2);
-
-      console.error(
-        `Expected action "${action.type}" to return an array but found ${json}`
-      );
-
-      return next;
-    }
-
-    const [model, ...effects] = array;
-
-    sideEffects = sideEffects.concat(effects);
-
-    return model;
-  };
-
-  return createStore => (reducer, preloadedState, enhancer) => {
-    const effectsReducer = toEffectsReducer(reducer);
-    const store = createStore(effectsReducer, preloadedState, enhancer);
-
-    const createSideEffectProcessor = dispatcher => effects => {
-      function process(effect) {
-        return Promise.resolve(effect(actionCreators, context))
-          .then(action => action && dispatcher(action))
-          .catch(console.error);
+      if (typeof reduce !== "function") {
+        return next;
       }
 
-      if (disableSideEffects) {
-        return Promise.resolve();
+      var array = reduce(next, action);
+
+      if (!Array.isArray(array)) {
+        var json = JSON.stringify(array, null, 2);
+
+        console.error(
+          'Expected action "' + action.type +
+          '" to return an array but found "' + json + '"'
+        );
+
+        return next;
       }
 
-      return Promise.all(effects.map(process));
+      var model = array[0];
+      var effects = array.slice(1);
+
+      sideEffects = sideEffects.concat(effects);
+
+      return model;
     };
+  }
 
-    function dispatch(action) {
-      store.dispatch(action);
+  return function (createStore) {
+    return function (reducer, preloadedState, enhancer) {
+      var effectsReducer = toEffectsReducer(reducer);
+      var store = createStore(effectsReducer, preloadedState, enhancer);
 
-      const effectsToProcess = sideEffects;
-      sideEffects = [];
+      function createSideEffectProcessor(dispatcher) {
+        return function (effects) {
+          function process(effect) {
+            return Promise.resolve(effect(actionCreators, context))
+              .then(function (action) {
+                return action && dispatcher(action);
+              })
+              .catch(console.error);
+          }
 
-      return createSideEffectProcessor(dispatch)(effectsToProcess);
-    }
+          if (disableSideEffects) {
+            return Promise.resolve();
+          }
 
-    function replaceReducer(reducer) {
-      return store.replaceReducer(toEffectsReducer(reducer));
-    }
+          return Promise.all(effects.map(process));
+        };
+      }
 
-    const storeWithEffects = Object.assign({ }, store, {
-      dispatch,
-      replaceReducer,
-      process: createSideEffectProcessor(dispatch)
-    });
+      function dispatch(action) {
+        store.dispatch(action);
 
-    return storeWithEffects;
+        var effectsToProcess = sideEffects;
+        sideEffects = [];
+
+        return createSideEffectProcessor(dispatch)(effectsToProcess);
+      }
+
+      function replaceReducer(reducer) {
+        return store.replaceReducer(toEffectsReducer(reducer));
+      }
+
+      var storeWithEffects = Object.assign({ }, store, {
+        dispatch,
+        replaceReducer,
+        process: createSideEffectProcessor(dispatch)
+      });
+
+      return storeWithEffects;
+    };
   };
 }
