@@ -35,11 +35,11 @@ function toActionCreator(target, type) {
   return target;
 }
 
-exports.toActionCreators = function toActionCreators(actions) {
+var toActionCreators = exports.toActionCreators = function (actions) {
   return Object.keys(actions).reduce(toActionCreator, {});
 };
 
-exports.effectsEnhancer = function effectsEnhancer(options) {
+exports.effectsEnhancer = function (options) {
   var context = options && options.context;
   var disableSideEffects = options && options.disableSideEffects;
   var sideEffects = [];
