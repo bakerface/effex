@@ -36,22 +36,19 @@ function toActionCreator(target, type) {
 }
 
 module.exports = function effex(options) {
-  var actions = options.actions;
-  var context = options.context;
-  var disableSideEffects = options.disableSideEffects;
+  var context = options && options.context;
+  var disableSideEffects = options && options.disableSideEffects;
   var sideEffects = [];
-  var actionCreators = Object.keys(actions).reduce(toActionCreator, {});
 
-  function toEffectsReducer(reducer) {
+  function toEffectsReducer(actions) {
     return function (state, action) {
-      var next = reducer(state, action);
       var reduce = actions[action.type] || actions._;
 
       if (typeof reduce !== "function") {
-        return next;
+        return state;
       }
 
-      var array = reduce(next, action);
+      var array = reduce(state, action);
 
       if (!Array.isArray(array)) {
         var json = JSON.stringify(array, null, 2);
@@ -61,21 +58,22 @@ module.exports = function effex(options) {
           '" to return an array but found "' + json + '"'
         );
 
-        return next;
+        return state;
       }
 
-      var model = array[0];
+      var next = array[0];
       var effects = array.slice(1);
 
       sideEffects = sideEffects.concat(effects);
 
-      return model;
+      return next;
     };
   }
 
   return function (createStore) {
-    return function (reducer, preloadedState, enhancer) {
-      var effectsReducer = toEffectsReducer(reducer);
+    return function (actions, preloadedState, enhancer) {
+      var actionCreators = Object.keys(actions).reduce(toActionCreator, {});
+      var effectsReducer = toEffectsReducer(actions);
       var store = createStore(effectsReducer, preloadedState, enhancer);
 
       function createSideEffectProcessor(dispatcher) {
@@ -105,8 +103,8 @@ module.exports = function effex(options) {
         return createSideEffectProcessor(dispatch)(effectsToProcess);
       }
 
-      function replaceReducer(reducer) {
-        return store.replaceReducer(toEffectsReducer(reducer));
+      function replaceReducer(actions) {
+        return store.replaceReducer(toEffectsReducer(actions));
       }
 
       var storeWithEffects = Object.assign({ }, store, {
