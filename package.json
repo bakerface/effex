@@ -1,0 +1,22 @@
+{
+  "name": "effex",
+  "version": "1.0.0",
+  "description": "Redux side effects, inspired by Elm",
+  "author": "Chris Baker <mail.chris.baker@gmail.com>",
+  "license": "MIT",
+  "main": "index.js",
+  "keywords": [
+    "redux",
+    "side",
+    "effects",
+    "elm",
+    "architecture",
+    "store",
+    "enhancer",
+    "middleware",
+    "reducer"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
