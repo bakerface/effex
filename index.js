@@ -35,7 +35,11 @@ function toActionCreator(target, type) {
   return target;
 }
 
-module.exports = function effex(options) {
+exports.toActionCreators = function toActionCreators(actions) {
+  return Object.keys(actions).reduce(toActionCreator, {});
+};
+
+exports.effectsEnhancer = function effectsEnhancer(options) {
   var context = options && options.context;
   var disableSideEffects = options && options.disableSideEffects;
   var sideEffects = [];
@@ -72,7 +76,7 @@ module.exports = function effex(options) {
 
   return function (createStore) {
     return function (actions, preloadedState, enhancer) {
-      var actionCreators = Object.keys(actions).reduce(toActionCreator, {});
+      var actionCreators = toActionCreators(actions);
       var effectsReducer = toEffectsReducer(actions);
       var store = createStore(effectsReducer, preloadedState, enhancer);
 
