@@ -110,8 +110,8 @@ module.exports = function effex(options) {
       }
 
       var storeWithEffects = Object.assign({ }, store, {
-        dispatch,
-        replaceReducer,
+        dispatch: dispatch,
+        replaceReducer: replaceReducer,
         process: createSideEffectProcessor(dispatch)
       });
 
