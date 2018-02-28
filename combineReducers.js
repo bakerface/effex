@@ -1,11 +1,11 @@
 var createStateWithEffects = require("./createStateWithEffects");
 
 module.exports = function combineReducers(reducers) {
-  function reducer(state = {}, action) {
+  function reducer(state, action) {
     var effects = [];
 
     function reduce(next, key) {
-      var value = reducers[key](state[key], action);
+      var value = reducers[key](state && state[key], action);
       var pair = createStateWithEffects(value);
 
       effects = effects.concat(pair.effects);
