@@ -1,6 +1,6 @@
 {
   "name": "effex",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Redux side effects, inspired by Elm",
   "author": "Chris Baker <mail.chris.baker@gmail.com>",
   "license": "MIT",

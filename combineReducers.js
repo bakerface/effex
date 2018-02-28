@@ -6,22 +6,16 @@ module.exports = function combineReducers(reducers) {
 
     function reduce(next, key) {
       var value = reducers[key](state[key], action);
-      var enhancedState = createStateWithEffects(value);
-      var substate = enhancedState[0];
+      var pair = createStateWithEffects(value);
 
-      effects = effects.concat(enhancedState.slice(1));
-      next[key] = substate;
+      effects = effects.concat(pair.effects);
+      next[key] = pair.state;
 
       return next;
     }
 
     var next = Object.keys(reducers).reduce(reduce, {});
-
-    if (effects.length > 0) {
-      return [next].concat(effects);
-    }
-
-    return next;
+    return createStateWithEffects(next, effects);
   }
 
   return reducer;

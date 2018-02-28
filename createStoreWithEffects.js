@@ -7,13 +7,10 @@ module.exports = function createStoreWithEffects() {
     function createEnhancedReducer(reducer) {
       function reduce(state, action) {
         var value = reducer(state, action);
-        var enhancedState = createStateWithEffects(value);
-        var next = enhancedState[0];
-        var effects = enhancedState.slice(1);
+        var pair = createStateWithEffects(value);
 
-        sideEffects = sideEffects.concat(effects);
-
-        return next;
+        sideEffects = sideEffects.concat(pair.effects);
+        return pair.state;
       }
 
       return reduce;
@@ -21,7 +18,10 @@ module.exports = function createStoreWithEffects() {
 
     function createEffectProcessor(dispatch) {
       function processOne(effect) {
-        return effect(dispatch);
+        return Promise.resolve(effect())
+          .then(function (action) {
+            return action && dispatch(action);
+          });
       }
 
       function process(effects) {
